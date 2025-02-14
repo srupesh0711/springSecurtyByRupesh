@@ -8,6 +8,9 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.web.authentication.WebAuthenticationDetails;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
@@ -23,7 +26,6 @@ public class JWTFilter extends OncePerRequestFilter {
         this.jwtService = jwtService;
         this.appRepository = appRepository;
     }
-
     @Override
     protected void doFilterInternal(HttpServletRequest request,
                                     HttpServletResponse response,
@@ -33,9 +35,18 @@ public class JWTFilter extends OncePerRequestFilter {
         if (token!= null && token.startsWith("Bearer ")) {
             String substring = token.substring(8, token.length() - 1);
             String username = jwtService.getUsername(substring);
-            System.out.println(username); //
+            //System.out.println(username); //
             Optional<App> opUsername = appRepository.findByUsername(username);
+            if (opUsername.isPresent()){
+                App app = opUsername.get();
+                UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken
+                        (app,null,null);
+                auth.setDetails(new WebAuthenticationDetails(request));
+                SecurityContextHolder.getContext().setAuthentication(auth);
+
+            }
         }
     filterChain.doFilter(request, response);
+        
     }
 }
